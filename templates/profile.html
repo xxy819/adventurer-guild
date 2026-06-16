@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}个人中心 - 冒险者公会{% endblock %}
+{% block content %}
+<div class="row">
+    <!-- 侧边信息 -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body text-center">
+                <i class="fas fa-user-circle fa-5x text-secondary mb-3"></i>
+                <h4>{{ current_user.nickname }}</h4>
+                <span class="badge bg-dark">{{ current_user.level_badge }}</span>
+                <hr>
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h5 class="text-warning mb-0">{{ stats.balance }}</h5>
+                        <small class="text-muted">余额</small>
+                    </div>
+                    <div class="col-4">
+                        <h5 class="text-primary mb-0">{{ stats.credit_score }}</h5>
+                        <small class="text-muted">信誉</small>
+                    </div>
+                    <div class="col-4">
+                        <h5 class="text-success mb-0">{{ stats.completed_count }}</h5>
+                        <small class="text-muted">已完成</small>
+                    </div>
+                </div>
+                <hr>
+                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                    <i class="fas fa-edit"></i> 编辑资料
+                </button>
+            </div>
+        </div>
+
+        <!-- 进度 -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <h6>冒险等级进度</h6>
+                <div class="progress mb-2" style="height: 20px;">
+                    <div class="progress-bar bg-warning text-dark fw-bold" style="width: {{ (current_user.mission_count / 10 * 100)|min(100) }}%">
+                        {{ current_user.mission_count }}/10
+                    </div>
+                </div>
+                <small class="text-muted">完成10个任务解锁高难度任务权限</small>
+
+                <hr>
+                <h6>统计</h6>
+                <div class="d-flex justify-content-between"><span>发布的任务</span><span>{{ stats.published_count }}</span></div>
+                <div class="d-flex justify-content-between"><span>承接的任务</span><span>{{ stats.assigned_count }}</span></div>
+            </div>
+        </div>
+
+        <!-- 通知 -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="fas fa-bell"></i> 通知</h6>
+                <a href="{{ url_for('read_all_notifications') }}" class="btn btn-sm btn-outline-secondary">全部已读</a>
+            </div>
+            <div class="card-body p-2">
+                {% for n in notifications %}
+                <a href="{{ n.related_link or '#' }}" class="d-block text-decoration-none p-2 border-bottom small">
+                    {{ n.content }}
+                    <br><small class="text-muted">{{ n.create_time.strftime('%m-%d %H:%M') }}</small>
+                </a>
+                {% else %}
+                <p class="text-muted small text-center p-3 mb-0">暂无通知</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 任务列表 -->
+    <div class="col-md-8">
+        <ul class="nav nav-tabs mb-4">
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if tab == 'published' }}" href="{{ url_for('profile', tab='published') }}">我发布的</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if tab == 'assigned' }}" href="{{ url_for('profile', tab='assigned') }}">我承接的</a>
+            </li>
+        </ul>
+
+        {% if tasks and tasks.items %}
+        <div class="list-group">
+            {% for task in tasks.items %}
+            <a href="{{ url_for('task_detail', task_id=task.id) }}" class="list-group-item list-group-item-action">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <span class="badge level-{{ task.level }}">{{ task.level }}</span>
+                        <span class="ms-2 fw-bold">{{ task.title }}</span>
+                    </div>
+                    <span class="badge bg-{{ 'success' if task.status == 'completed' else 'primary' if task.status == 'in_progress' else 'secondary' }}">
+                        {{ task.status_cn }}
+                    </span>
+                </div>
+                <small class="text-muted">
+                    <i class="fas fa-coins text-warning"></i> {{ task.reward }}
+                    | {{ task.create_time.strftime('%Y-%m-%d') }}
+                    {% if task.assignee %}| 冒险者: {{ task.assignee.nickname }}{% endif %}
+                </small>
+            </a>
+            {% endfor %}
+        </div>
+
+        {% if tasks.pages > 1 %}
+        <nav class="mt-3">
+            <ul class="pagination pagination-sm justify-content-center">
+                {% if tasks.has_prev %}
+                <li class="page-item"><a class="page-link" href="{{ url_for('profile', page=tasks.prev_num, tab=tab) }}">上一页</a></li>
+                {% endif %}
+                {% if tasks.has_next %}
+                <li class="page-item"><a class="page-link" href="{{ url_for('profile', page=tasks.next_num, tab=tab) }}">下一页</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="fas fa-inbox fa-4x mb-3"></i>
+            <p>暂无任务记录</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 编辑资料弹窗 -->
+<div class="modal fade" id="editProfileModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('edit_profile') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">编辑资料</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">昵称</label>
+                        <input type="text" name="nickname" class="form-control" value="{{ current_user.nickname }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">性别</label>
+                        <select name="gender" class="form-select">
+                            <option value="保密" {{ 'selected' if current_user.gender == '保密' }}>保密</option>
+                            <option value="男" {{ 'selected' if current_user.gender == '男' }}>男</option>
+                            <option value="女" {{ 'selected' if current_user.gender == '女' }}>女</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">手机号</label>
+                        <input type="text" name="phone" class="form-control" value="{{ current_user.phone or '' }}">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}页面未找到 - 冒险者公会{% endblock %}
+{% block content %}
+<div class="text-center py-5">
+    <i class="fas fa-map-signs fa-5x text-muted mb-4"></i>
+    <h2>404 - 任务地点未找到</h2>
+    <p class="text-muted">你寻找的页面可能已被删除，或不存在于这个世界</p>
+    <a href="{{ url_for('index') }}" class="btn btn-warning mt-3">返回公会大厅</a>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}评价任务 - 冒险者公会{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center p-4">
+                <i class="fas fa-star fa-3x text-warning mb-3"></i>
+                <h4>评价任务</h4>
+                <p class="text-muted">{{ task.title }}</p>
+                <hr>
+                <form method="post">
+                    <div class="mb-4">
+                        <label class="form-label">评分</label>
+                        <div class="rating">
+                            {% for i in range(5, 0, -1) %}
+                            <input type="radio" name="score" value="{{ i }}" id="star{{ i }}" {{ 'checked' if i == 5 }}>
+                            <label for="star{{ i }}"><i class="fas fa-star"></i></label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">评价语</label>
+                        <textarea name="comment" class="form-control" rows="3" placeholder="分享你的任务体验..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-warning w-100">提交评价</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<style>
+.rating {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: center;
+    gap: 5px;
+}
+.rating input { display: none; }
+.rating label { font-size: 2rem; color: #ddd; cursor: pointer; }
+.rating input:checked ~ label,
+.rating label:hover,
+.rating label:hover ~ label { color: #ffc107; }
+</style>
+{% endblock %}

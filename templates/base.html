@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}冒险者公会{% endblock %}</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
+                <i class="fas fa-shield-halved me-2"></i>
+                <span class="fw-bold">冒险者公会</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-list"></i> 任务分类
+                        </a>
+                        <ul class="dropdown-menu">
+                            {% for lv in ['SSS','SS','S','A','B','C','D','E'] %}
+                            <li><a class="dropdown-item" href="{{ url_for('task_list', level=lv) }}">
+                                <span class="badge level-{{ lv }}">{{ lv }}</span> 级任务
+                            </a></li>
+                            {% endfor %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('task_list') }}">全部任务</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('task_list') }}">
+                            <i class="fas fa-magnifying-glass"></i> 探索任务
+                        </a>
+                    </li>
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('create_task') }}">
+                            <i class="fas fa-plus-circle"></i> 发布任务
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav">
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-bell"></i>
+                            {% if unread_count > 0 %}
+                            <span class="badge bg-danger rounded-pill">{{ unread_count }}</span>
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end notification-dropdown">
+                            <li><h6 class="dropdown-header">通知</h6></li>
+                            {% for n in recent_notifications %}
+                                <li>
+                                    <a class="dropdown-item small" href="{{ n.related_link or '#' }}">
+                                        {{ n.content }}
+                                        <br><small class="text-muted">{{ n.create_time.strftime('%m-%d %H:%M') }}</small>
+                                    </a>
+                                </li>
+                                {% else %}
+                                <li><span class="dropdown-item text-muted">暂无通知</span></li>
+                                {% endfor %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-center" href="{{ url_for('read_all_notifications') }}">标记已读</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle"></i> {{ current_user.nickname }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i class="fas fa-id-card"></i> 个人中心</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('profile', tab='published') }}"><i class="fas fa-tasks"></i> 我的任务</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('messages') }}"><i class="fas fa-envelope"></i> 私信</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> 退出</a></li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('login') }}"><i class="fas fa-sign-in-alt"></i> 登录</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-warning text-dark px-3" href="{{ url_for('register') }}">
+                            <i class="fas fa-user-plus"></i> 注册
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash 消息 -->
+    <div class="container mt-3">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- 主内容 -->
+    <main class="container py-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="fas fa-shield-halved"></i> 冒险者公会</h5>
+                    <p class="text-muted small">连接委托人与冒险者的可信平台<br>每一次冒险都值得被信赖</p>
+                </div>
+                <div class="col-md-3">
+                    <h6>快速链接</h6>
+                    <ul class="list-unstyled small">
+                        <li><a href="{{ url_for('task_list') }}" class="text-muted text-decoration-none">探索任务</a></li>
+                        <li><a href="{{ url_for('create_task') }}" class="text-muted text-decoration-none">发布任务</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h6>任务等级</h6>
+                    <ul class="list-unstyled small">
+                        {% for lv in ['E','D','C','B','A','S','SS','SSS'] %}
+                        <li><a href="{{ url_for('task_list', level=lv) }}" class="text-muted text-decoration-none">{{ lv }}级任务</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            <hr class="text-muted">
+            <div class="text-center text-muted small">
+                &copy; 2026 冒险者公会 Adventurer's Guild. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

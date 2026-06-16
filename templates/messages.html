@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}私信 - 冒险者公会{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0"><i class="fas fa-users"></i> 联系人</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for contact in contacts %}
+                <a href="#" class="list-group-item list-group-item-action contact-item" data-userid="{{ contact.id }}">
+                    <i class="fas fa-user-circle"></i> {{ contact.nickname }}
+                </a>
+                {% else %}
+                <div class="list-group-item text-muted text-center">暂无联系人</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0"><i class="fas fa-comments"></i> 消息</h5>
+            </div>
+            <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                {% for msg in recent_messages %}
+                <div class="mb-3 p-2 rounded {{ 'bg-light' if msg.from_user_id != current_user.id else 'bg-warning bg-opacity-10' }}"
+                     style="{{ 'text-end' if msg.from_user_id == current_user.id }}">
+                    <small class="text-muted">{{ msg.from_user.nickname if msg.from_user else '用户' }}
+                        → {{ msg.to_user.nickname if msg.to_user else '用户' }}
+                        | {{ msg.create_time.strftime('%m-%d %H:%M') }}</small>
+                    <div>{{ msg.content }}</div>
+                    {% if not msg.is_read and msg.to_user_id == current_user.id %}
+                    <a href="{{ url_for('read_message', msg_id=msg.id) }}" class="small text-primary">标记已读</a>
+                    {% endif %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-5">暂无消息记录</p>
+                {% endfor %}
+            </div>
+            <div class="card-footer bg-transparent">
+                <form method="post" action="{{ url_for('send_message') }}" class="d-flex gap-2">
+                    <select name="to_user_id" class="form-select form-select-sm" style="width: auto;" required>
+                        <option value="">选择联系人</option>
+                        {% for contact in contacts %}
+                        <option value="{{ contact.id }}">{{ contact.nickname }}</option>
+                        {% endfor %}
+                        {% if current_user.is_authenticated %}
+                        {% for user in [1,2,3,4,5] %}
+                        {% set u = namespace(found=False) %}
+                        {% for c in contacts %}{% if c.id == user %}{% set u.found = True %}{% endif %}{% endfor %}
+                        {% if not u.found %}
+                        {% set user_obj = user %}
+                        {% endif %}
+                        {% endfor %}
+                        {% endif %}
+                    </select>
+                    <input type="text" name="content" class="form-control" required placeholder="输入消息...">
+                    <button type="submit" class="btn btn-warning btn-sm">发送</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+$('.contact-item').click(function(e) {
+    e.preventDefault();
+    var uid = $(this).data('userid');
+    $('select[name="to_user_id"]').val(uid);
+});
+</script>
+{% endblock %}

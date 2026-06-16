@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+{% block title %}{{ task.title }} - 冒险者公会{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+{% endblock %}
+{% block content %}
+
+<div class="row">
+    <div class="col-md-8">
+        <!-- 任务基本信息 -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <span class="badge level-{{ task.level }} fs-6">{{ task.level }}级任务</span>
+                        <span class="badge bg-{{ 'success' if task.status == 'completed' else 'primary' if task.status == 'in_progress' else 'secondary' if task.status == 'pending' else 'warning' if task.status == 'reviewing' else 'danger' }} ms-2">
+                            {{ task.status_cn }}
+                        </span>
+                    </div>
+                    <span class="text-muted small">{{ task.create_time.strftime('%Y-%m-%d %H:%M') }}</span>
+                </div>
+
+                <h3>{{ task.title }}</h3>
+
+                <div class="row g-3 my-3">
+                    <div class="col-sm-4">
+                        <div class="border rounded p-3 text-center">
+                            <small class="text-muted d-block">报酬</small>
+                            <span class="fs-4 fw-bold text-warning"><i class="fas fa-coins"></i> {{ task.reward }}</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="border rounded p-3 text-center">
+                            <small class="text-muted d-block">发布者</small>
+                            <a href="{{ url_for('user_profile', user_id=publisher.id) }}" class="text-decoration-none">
+                                <i class="fas fa-user"></i> {{ publisher.nickname }}
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="border rounded p-3 text-center">
+                            <small class="text-muted d-block">地点</small>
+                            <span>{{ task.location or '不限' }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {% if task.expected_time %}
+                <div class="mb-3">
+                    <small class="text-muted"><i class="fas fa-clock"></i> 预期完成时间：{{ task.expected_time }}</small>
+                </div>
+                {% endif %}
+
+                <hr>
+                <h6>任务描述</h6>
+                <div class="task-description">{{ task.description | replace('\n', '<br>') | safe }}</div>
+
+                {% if task.review_comment %}
+                <hr>
+                <div class="alert alert-info">
+                    <strong>审核意见：</strong>{{ task.review_comment }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 定位地图 -->
+        {% if task.status == 'in_progress' and current_user.is_authenticated and (current_user.id == task.publisher_id or current_user.id == task.assignee_id) %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0"><i class="fas fa-map-location-dot"></i> 实时位置追踪</h5>
+            </div>
+            <div class="card-body">
+                <div id="map" style="height: 300px; border-radius: 8px;"></div>
+                <div class="mt-2">
+                    <button id="shareLocation" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-location-crosshairs"></i> 分享我的位置
+                    </button>
+                    <small class="text-muted ms-2">双方开启定位后可实时查看位置</small>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 评价区域 -->
+        {% if reviews %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0"><i class="fas fa-star"></i> 任务评价</h5>
+            </div>
+            <div class="card-body">
+                {% for review in reviews %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <strong>{{ review.from_user.nickname if review.from_user else '用户' }}</strong>
+                        <small class="text-muted">{{ review.create_time.strftime('%Y-%m-%d') }}</small>
+                    </div>
+                    <div>
+                        {% for i in range(5) %}
+                        <i class="fas fa-star {{ 'text-warning' if i < review.score else 'text-muted' }}"></i>
+                        {% endfor %}
+                        <span class="ms-2">{{ review.comment or '' }}</span>
+                    </div>
+                    <small class="text-muted">作为{{ '委托人' if review.role == 'publisher' else '冒险者' }}</small>
+                </div>
+                {% if not loop.last %}<hr>{% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 交易记录 -->
+        {% set trans = task.transactions.first() %}
+        {% if trans %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0"><i class="fas fa-coins"></i> 资金托管状态</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <span>委托金额</span>
+                    <span class="fw-bold">{{ trans.amount }} 虚拟货币</span>
+                </div>
+                <div class="d-flex justify-content-between mt-2">
+                    <span>手续费 ({{ (task.fee_rate * 100)|int }}%)</span>
+                    <span>{{ trans.fee }}</span>
+                </div>
+                <div class="d-flex justify-content-between mt-2">
+                    <span>状态</span>
+                    <span class="badge bg-{{ 'success' if trans.status == 'released' else 'info' if trans.status == 'frozen' else 'secondary' }}">
+                        {{ '已释放' if trans.status == 'released' else '已冻结' if trans.status == 'frozen' else '已退款' }}
+                    </span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 右侧操作面板 -->
+    <div class="col-md-4">
+        <!-- 发布者信息 -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body text-center">
+                <i class="fas fa-user-circle fa-4x text-secondary mb-2"></i>
+                <h5>{{ publisher.nickname }}</h5>
+                <small class="text-muted">{{ publisher.level_badge }}</small>
+                <div class="mt-2">
+                    <small class="text-muted"><i class="fas fa-star text-warning"></i> 信誉 {{ publisher.credit_score }}</small>
+                </div>
+                {% if current_user.is_authenticated and current_user.id != publisher.id %}
+                <a href="{{ url_for('user_profile', user_id=publisher.id) }}" class="btn btn-sm btn-outline-primary mt-2">查看资料</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        {% if current_user.is_authenticated %}
+
+        {% if task.status == 'pending' and can_accept %}
+        <form method="post" action="{{ url_for('accept_task', task_id=task.id) }}" class="mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <button type="submit" class="btn btn-primary w-100 py-2" onclick="return confirm('确认承接该任务？')">
+                        <i class="fas fa-hand"></i> 承接任务
+                    </button>
+                    <small class="text-muted d-block mt-2 text-center">
+                        <i class="fas fa-shield"></i> 承接后金额将冻结在官方平台
+                    </small>
+                </div>
+            </div>
+        </form>
+        {% elif task.status == 'pending' and current_user.id != task.publisher_id %}
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body text-center">
+                <button class="btn btn-secondary w-100 py-2" disabled>
+                    <i class="fas fa-lock"></i> 需要先完成10个低等级任务
+                </button>
+                <small class="text-muted d-block mt-2">已完成任务：{{ current_user.mission_count }}/10</small>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if task.status == 'in_progress' and current_user.id == task.assignee_id %}
+        <form method="post" action="{{ url_for('complete_task', task_id=task.id) }}" class="mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <button type="submit" class="btn btn-success w-100 py-2" onclick="return confirm('确认提交完成申请？')">
+                        <i class="fas fa-check"></i> 提交完成申请
+                    </button>
+                    <small class="text-muted d-block mt-2 text-center">等待委托人验收</small>
+                </div>
+            </div>
+        </form>
+        {% endif %}
+
+        {% if task.status == 'in_progress' and current_user.id == task.publisher_id %}
+        <form method="post" action="{{ url_for('complete_task', task_id=task.id) }}" class="mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <button type="submit" class="btn btn-success w-100 py-2" onclick="return confirm('确认任务已完成？资金将发放给冒险者')">
+                        <i class="fas fa-check-circle"></i> 确认完成
+                    </button>
+                </div>
+            </div>
+        </form>
+        {% endif %}
+
+        {% if current_user.id == task.publisher_id and task.status in ['pending', 'reviewing', 'in_progress'] %}
+        <form method="post" action="{{ url_for('cancel_task', task_id=task.id) }}" class="mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <button type="submit" class="btn btn-outline-danger w-100 py-2" onclick="return confirm('确认取消任务？冻结资金将退还')">
+                        <i class="fas fa-ban"></i> 取消任务
+                    </button>
+                </div>
+            </div>
+        </form>
+        {% endif %}
+
+        {% if task.status == 'completed' %}
+            {% set my_review = namespace(found=false) %}
+            {% for r in reviews %}
+                {% if r.from_user_id == current_user.id %}
+                    {% set my_review.found = true %}
+                {% endif %}
+            {% endfor %}
+            {% if not my_review.found and (current_user.id == task.publisher_id or current_user.id == task.assignee_id) %}
+            <a href="{{ url_for('review_task', task_id=task.id) }}" class="btn btn-warning w-100 mb-3">
+                <i class="fas fa-star"></i> 评价任务
+            </a>
+            {% endif %}
+        {% endif %}
+
+        {% else %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <p class="text-muted">请登录后承接任务</p>
+                <a href="{{ url_for('login') }}" class="btn btn-warning">登录</a>
+                <a href="{{ url_for('register') }}" class="btn btn-outline-primary">注册</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if task.status == 'in_progress' and current_user.is_authenticated and (current_user.id == task.publisher_id or current_user.id == task.assignee_id) %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+var map = L.map('map').setView([35, 110], 4);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap'
+}).addTo(map);
+
+// 加载位置数据
+$.getJSON('{{ url_for("get_task_locations", task_id=task.id) }}', function(data) {
+    var colors = ['red', 'blue', 'green', 'orange'];
+    var i = 0;
+    $.each(data, function(name, points) {
+        if (points.length > 0) {
+            var color = colors[i % colors.length];
+            var coords = points.map(function(p) { return [p.lat, p.lng]; });
+            L.polyline(coords, {color: color}).addTo(map);
+            L.marker(coords[coords.length-1]).addTo(map)
+                .bindPopup(name + ': ' + points[points.length-1].time);
+            if (coords.length > 0) map.fitBounds(coords);
+            i++;
+        }
+    });
+});
+
+// 分享位置
+$('#shareLocation').click(function() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(pos) {
+            $.post('{{ url_for("update_location") }}', {
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude,
+                task_id: {{ task.id }}
+            }, function() {
+                alert('位置已分享');
+                location.reload();
+            });
+        }, function() {
+            alert('无法获取位置，请检查定位权限');
+        });
+    } else {
+        alert('浏览器不支持定位');
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

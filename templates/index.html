@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}冒险者公会 - 首页{% endblock %}
+{% block content %}
+
+<!-- 轮播图 -->
+<div id="heroCarousel" class="carousel slide mb-5" data-bs-ride="carousel">
+    <div class="carousel-indicators">
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active"></button>
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2"></button>
+    </div>
+    <div class="carousel-inner rounded-4 shadow">
+        <div class="carousel-item active">
+            <div class="carousel-bg" style="background: linear-gradient(135deg, #1a1a2e, #16213e);">
+                <div class="carousel-caption">
+                    <h1 class="display-4 fw-bold">冒险者公会</h1>
+                    <p class="lead">连接每一位委托人与勇敢的冒险者</p>
+                    {% if not current_user.is_authenticated %}
+                    <a href="{{ url_for('register') }}" class="btn btn-warning btn-lg">立即加入</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="carousel-item">
+            <div class="carousel-bg" style="background: linear-gradient(135deg, #0f3460, #533483);">
+                <div class="carousel-caption">
+                    <h2>SSS级任务悬赏</h2>
+                    <p>探索未知领域，完成传说级委托，赢得无上荣耀</p>
+                    <a href="{{ url_for('task_list', level='SSS') }}" class="btn btn-danger btn-lg">查看SSS级任务</a>
+                </div>
+            </div>
+        </div>
+        <div class="carousel-item">
+            <div class="carousel-bg" style="background: linear-gradient(135deg, #1b1b2f, #e94560);">
+                <div class="carousel-caption">
+                    <h2>成为认证冒险者</h2>
+                    <p>完成10个低等级任务，解锁高级任务承接权限</p>
+                    <a href="{{ url_for('task_list') }}" class="btn btn-light btn-lg">开始冒险</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon"></span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon"></span>
+    </button>
+</div>
+
+<!-- 快速操作 -->
+<div class="row g-3 mb-5">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <i class="fas fa-search fa-3x text-primary mb-3"></i>
+                <h5>探索任务</h5>
+                <p class="text-muted">浏览各级任务，找到适合你的挑战</p>
+                <a href="{{ url_for('task_list') }}" class="btn btn-outline-primary">去看看</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <i class="fas fa-pen-to-square fa-3x text-success mb-3"></i>
+                <h5>发布任务</h5>
+                <p class="text-muted">B级以下任务可直接发布，B级以上需官方认证</p>
+                <a href="{{ url_for('create_task') }}" class="btn btn-outline-success">发布委托</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <i class="fas fa-ranking-star fa-3x text-warning mb-3"></i>
+                <h5>冒险者排行</h5>
+                <p class="text-muted">查看信誉最高的冒险者</p>
+                <a href="#top-adventurers" class="btn btn-outline-warning">排行榜</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 热门任务 -->
+<section class="mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3><i class="fas fa-fire text-danger"></i> 热门任务</h3>
+        <a href="{{ url_for('task_list') }}" class="btn btn-sm btn-outline-secondary">查看全部 <i class="fas fa-arrow-right"></i></a>
+    </div>
+    <div class="row g-3">
+        {% for task in hot_tasks %}
+        <div class="col-lg-4 col-md-6">
+            <div class="card task-card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge level-{{ task.level }}">{{ task.level }}级</span>
+                        <span class="text-muted small">{{ task.create_time.strftime('%m-%d') }}</span>
+                    </div>
+                    <h5 class="card-title">{{ task.title }}</h5>
+                    <p class="card-text text-muted small">{{ task.description[:100] }}{% if task.description|length > 100 %}...{% endif %}</p>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div>
+                            <span class="fw-bold text-warning"><i class="fas fa-coins"></i> {{ task.reward }}</span>
+                            <small class="text-muted ms-2">{{ task.location or '地点不限' }}</small>
+                        </div>
+                        <a href="{{ url_for('task_detail', task_id=task.id) }}" class="btn btn-sm btn-outline-primary">详情</a>
+                    </div>
+                    <div class="mt-2 small text-muted">
+                        <i class="fas fa-user"></i> {{ task.publisher.nickname }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="text-center py-5 text-muted">
+                <i class="fas fa-inbox fa-3x mb-3"></i>
+                <p>暂无等待接取的任务</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- 已完成任务 -->
+<section class="mb-5">
+    <h3 class="mb-4"><i class="fas fa-check-circle text-success"></i> 最近完成的任务</h3>
+    <div class="row g-3">
+        {% for task in completed_tasks %}
+        <div class="col-md-3 col-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center py-3">
+                    <span class="badge level-{{ task.level }} mb-2">{{ task.level }}级</span>
+                    <h6 class="card-title small">{{ task.title }}</h6>
+                    <div class="small text-muted">
+                        <i class="fas fa-user-check"></i> {{ task.assignee.nickname if task.assignee else '未知' }}
+                    </div>
+                    <div class="small text-success mt-1">
+                        <i class="fas fa-check"></i> {{ task.complete_time.strftime('%m-%d') if task.complete_time else '' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <p class="text-muted text-center">暂无已完成任务</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- 冒险者排行 -->
+<section id="top-adventurers" class="mb-5">
+    <h3 class="mb-4"><i class="fas fa-trophy text-warning"></i> 信誉冒险者榜</h3>
+    <div class="card border-0 shadow-sm">
+        <div class="list-group list-group-flush">
+            {% for adv in top_adventurers %}
+            <a href="{{ url_for('user_profile', user_id=adv.id) }}" class="list-group-item list-group-item-action d-flex align-items-center">
+                <span class="badge bg-{{ 'warning' if loop.index == 1 else 'secondary' }} rounded-pill me-3">{{ loop.index }}</span>
+                <div class="flex-grow-1">
+                    <strong>{{ adv.nickname }}</strong>
+                    <small class="text-muted ms-2">{{ adv.level_badge }}</small>
+                </div>
+                <div class="text-end">
+                    <small class="text-warning"><i class="fas fa-star"></i> 信誉 {{ adv.credit_score }}</small>
+                    <br>
+                    <small class="text-muted">完成 {{ adv.mission_count }} 个任务</small>
+                </div>
+            </a>
+            {% else %}
+            <div class="list-group-item text-muted text-center">暂无冒险者数据</div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}发布任务 - 冒险者公会{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <h4 class="mb-4"><i class="fas fa-pen-to-square"></i> 发布新任务</h4>
+                <form method="post">
+                    <div class="mb-3">
+                        <label class="form-label">任务标题 <span class="text-danger">*</span></label>
+                        <input type="text" name="title" class="form-control" required maxlength="200" placeholder="简要概括任务核心">
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">任务等级</label>
+                            <select name="level" class="form-select">
+                                {% for lv in levels %}
+                                <option value="{{ lv }}" {% if lv == 'E' %}selected{% endif %}>{{ lv }}级 - 
+                                    {% if lv == 'E' %}新手任务{% elif lv == 'D' %}简单{% elif lv == 'C' %}普通{% elif lv == 'B' %}困难{% elif lv == 'A' %}精英{% elif lv == 'S' %}噩梦{% elif lv == 'SS' %}传说{% elif lv == 'SSS' %}神话{% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">报酬金额 <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-coins"></i></span>
+                                <input type="number" name="reward" class="form-control" required min="1" step="1" value="100">
+                            </div>
+                            <small class="text-muted">当前余额: <strong>{{ current_user.balance }}</strong> 虚拟货币</small>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">地点（可选）</label>
+                            <input type="text" name="location" class="form-control" placeholder="任务执行地点">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">预期完成时间（可选）</label>
+                            <input type="text" name="expected_time" class="form-control" placeholder="例: 3天 / 1周">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">任务描述 <span class="text-danger">*</span></label>
+                        <textarea name="description" class="form-control" rows="8" required placeholder="详细描述任务要求、特殊条件、注意事项等"></textarea>
+                    </div>
+
+                    <!-- B级以上提示 -->
+                    <div class="alert alert-warning" id="reviewAlert" style="display:none;">
+                        <i class="fas fa-shield"></i> <strong>B级以上任务需要官方审核</strong>
+                        <br>提交后我们将审核您的资质和任务计划，审核通过后任务才会正式上线。
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{{ url_for('task_list') }}" class="btn btn-outline-secondary">取消</a>
+                        <button type="submit" class="btn btn-warning px-5">发布任务</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+$(document).ready(function() {
+    $('select[name="level"]').change(function() {
+        var level = $(this).val();
+        var rank = ['E','D','C','B','A','S','SS','SSS'];
+        var idx = rank.indexOf(level);
+        if (idx >= 3) { // B级以上
+            $('#reviewAlert').show();
+        } else {
+            $('#reviewAlert').hide();
+        }
+    }).trigger('change');
+});
+</script>
+{% endblock %}
