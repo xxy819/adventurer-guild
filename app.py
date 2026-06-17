@@ -807,8 +807,9 @@ def init_db():
 
 # ─── 启动入口 ──────────────────────────────────────────────
 
+# gunicorn 启动时自动建表
+with app.app_context():
+    db.create_all()
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        print('数据库已就绪')
     app.run(debug=True, host='0.0.0.0', port=5000)
