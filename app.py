@@ -797,12 +797,20 @@ def not_found(e):
     return render_template('404.html'), 404
 
 
-# ─── 初始化数据库 ──────────────────────────────────────────
+# ─── 初始化种子数据 ──────────────────────────────────────
 
-@app.cli.command('init-db')
-def init_db():
-    db.create_all()
-    print('数据库初始化完成')
+@app.route('/init-seed')
+def init_seed():
+    """访问此路由初始化演示数据（需要token验证）"""
+    token = request.args.get('token', '')
+    if token != 'guild2026':
+        return jsonify({'error': 'token无效'}), 403
+
+    with app.app_context():
+        from models import TASK_STATUS_PENDING
+        from seed import seed_data
+        result = seed_data()
+    return jsonify({'status': 'ok', 'message': result})
 
 
 # ─── 启动入口 ──────────────────────────────────────────────
