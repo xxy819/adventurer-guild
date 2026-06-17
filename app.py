@@ -20,7 +20,10 @@ from models import (db, User, Task, Transaction, Review, LocationRecord,
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'adventurer-guild-secret-key-2026'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///guild.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///guild.db')
+# Render 上 PostgreSQL 连接需要以 postgresql:// 开头
+if app.config['SQLALCHEMY_DATABASE_URI'] and app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
+    app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace('postgres://', 'postgresql://', 1)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
